@@ -1,0 +1,331 @@
+// Prisma schema — Shalom (Hebrew learning platform)
+// Dev: SQLite (file:./dev.db). Prod: switch DATABASE_URL to Postgres; schema stays compatible.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id         String   @id @default(cuid())
+  name       String
+  logoUrl    String?
+  brandColor String?
+  users      User[]
+  courses    Course[]
+  scenarios  Scenario[]
+  createdAt  DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  LEARNER
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model User {
+  id           String           @id @default(cuid())
+  tenantId     String
+  tenant       Tenant           @relation(fields: [tenantId], references: [id])
+  email        String           @unique
+  passwordHash String
+  name         String
+  role         Role             @default(LEARNER)
+  xp           Int              @default(0)
+  streakCount  Int              @default(0)
+  lastActiveOn DateTime?
+  enrollments  Enrollment[]
+  progress     LessonProgress[]
+  cardStates   CardState[]
+  mcqAttempts  McqAttempt[]
+  quizAttempts QuizAttempt[]
+  conversations RoleplayConversation[]
+  createdAt    DateTime         @default(now())
+
+  @@index([tenantId])
+}
+
+model Course {
+  id              String           @id @default(cuid())
+  tenantId        String
+  tenant          Tenant           @relation(fields: [tenantId], references: [id])
+  title           String
+  description     String?
+  level           String?
+  coverColor      String?
+  status          ContentStatus    @default(PUBLISHED)
+  order           Int              @default(0)
+  modules         Module[]
+  enrollments     Enrollment[]
+  enrollmentCodes EnrollmentCode[]
+  createdAt       DateTime         @default(now())
+
+  @@index([tenantId])
+}
+
+model Module {
+  id           String          @id @default(cuid())
+  courseId     String
+  course       Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  order        Int             @default(0)
+  status       ContentStatus   @default(PUBLISHED)
+  aiSourceText String?
+  lessons      Lesson[]
+  quizzes      Quiz[]
+  decks        FlashcardDeck[]
+
+  @@index([courseId])
+}
+
+model Lesson {
+  id       String           @id @default(cuid())
+  moduleId String
+  module   Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title    String
+  bodyNe   String?
+  bodyEn   String?
+  videoUrl String?
+  order    Int              @default(0)
+  status   ContentStatus    @default(PUBLISHED)
+  mcqs     Mcq[]
+  progress LessonProgress[]
+
+  @@index([moduleId])
+}
+
+model Mcq {
+  id            String       @id @default(cuid())
+  lessonId      String
+  lesson        Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  promptNe      String
+  hebrewText    String?
+  explanationNe String?
+  options       McqOption[]
+  attempts      McqAttempt[]
+  order         Int          @default(0)
+
+  @@index([lessonId])
+}
+
+model McqOption {
+  id        String  @id @default(cuid())
+  mcqId     String
+  mcq       Mcq     @relation(fields: [mcqId], references: [id], onDelete: Cascade)
+  text      String
+  isCorrect Boolean @default(false)
+
+  @@index([mcqId])
+}
+
+model Quiz {
+  id        String         @id @default(cuid())
+  moduleId  String
+  module    Module         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title     String
+  status    ContentStatus  @default(PUBLISHED)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([moduleId])
+}
+
+model QuizQuestion {
+  id            String       @id @default(cuid())
+  quizId        String
+  quiz          Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  promptNe      String
+  hebrewText    String?
+  explanationNe String?
+  options       QuizOption[]
+  order         Int          @default(0)
+
+  @@index([quizId])
+}
+
+model QuizOption {
+  id         String       @id @default(cuid())
+  questionId String
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean      @default(false)
+
+  @@index([questionId])
+}
+
+model FlashcardDeck {
+  id       String        @id @default(cuid())
+  moduleId String
+  module   Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title    String
+  status   ContentStatus @default(PUBLISHED)
+  cards    Flashcard[]
+
+  @@index([moduleId])
+}
+
+model Flashcard {
+  id              String        @id @default(cuid())
+  deckId          String
+  deck            FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  front           String
+  back            String
+  transliteration String?
+  exampleHe       String?
+  exampleNe       String?
+  cardStates      CardState[]
+
+  @@index([deckId])
+}
+
+model CardState {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId       String
+  card         Flashcard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  ease         Float     @default(2.5)
+  intervalDays Int       @default(0)
+  dueOn        DateTime  @default(now())
+  reps         Int       @default(0)
+
+  @@unique([userId, cardId])
+  @@index([userId])
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model LessonProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completed Boolean  @default(false)
+  score     Int?
+  xpEarned  Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+}
+
+// Per-question attempt records. Powers the mistakes queue and analytics.
+model McqAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mcqId     String
+  mcq       Mcq      @relation(fields: [mcqId], references: [id], onDelete: Cascade)
+  correct   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, mcqId])
+}
+
+// Pre-generated invite codes — admin shares one, student self-signs up
+// at /enroll/[code] and is auto-enrolled in the linked course.
+model EnrollmentCode {
+  id         String    @id @default(cuid())
+  code       String    @unique
+  courseId   String
+  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  redeemedBy String?
+  redeemedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([courseId])
+}
+
+// Real-world conversation scenarios. Each scenario carries a phrasebook of
+// useful lines plus an AI role prompt that drives the multi-turn roleplay chat.
+model Scenario {
+  id           String                 @id @default(cuid())
+  tenantId     String
+  tenant       Tenant                 @relation(fields: [tenantId], references: [id])
+  title        String
+  description  String?
+  setting      String? // human-readable: "Speaking to a doctor at a clinic"
+  aiRolePrompt String // for the AI: "You are an Israeli doctor at a clinic..."
+  level        String?
+  icon         String? // emoji or short tag
+  status       ContentStatus          @default(PUBLISHED)
+  order        Int                    @default(0)
+  phrases      Phrase[]
+  conversations RoleplayConversation[]
+  createdAt    DateTime               @default(now())
+
+  @@index([tenantId])
+}
+
+model Phrase {
+  id              String   @id @default(cuid())
+  scenarioId      String
+  scenario        Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  hebrew          String
+  english         String
+  transliteration String?
+  whenToUse       String?
+  order           Int      @default(0)
+
+  @@index([scenarioId])
+}
+
+model RoleplayConversation {
+  id         String            @id @default(cuid())
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scenarioId String
+  scenario   Scenario          @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  messages   RoleplayMessage[]
+  createdAt  DateTime          @default(now())
+
+  @@index([userId, scenarioId])
+}
+
+model RoleplayMessage {
+  id             String               @id @default(cuid())
+  conversationId String
+  conversation   RoleplayConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // "user" or "assistant"
+  content        String // for assistant: combined "<he>שלום</he> Hello, how are you?" using inline tags
+  createdAt      DateTime             @default(now())
+
+  @@index([conversationId])
+}
+
+// One row per quiz attempt. Enables retry + best-score display.
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score     Int      // 0-100
+  xpEarned  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([userId, quizId])
+}

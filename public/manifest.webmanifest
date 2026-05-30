@@ -1,0 +1,10 @@
+{
+  "name": "Shalom — Hebrew learning",
+  "short_name": "Shalom",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FBF7F0",
+  "theme_color": "#3F7D6E",
+  "icons": []
+}
