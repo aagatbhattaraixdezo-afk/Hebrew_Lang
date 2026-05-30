@@ -1,9 +1,9 @@
+import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import type { NextRequest } from "next/server";
 
-export default auth((req) => {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
+export async function middleware(request: NextRequest) {
+  const { nextUrl } = request;
   const path = nextUrl.pathname;
 
   const isAuthPage = path === "/login";
@@ -16,6 +16,12 @@ export default auth((req) => {
 
   if (isPublicAsset) return NextResponse.next();
 
+  const token = await getToken({
+    req: request,
+    secret: process.env.AUTH_SECRET,
+  });
+  const isLoggedIn = !!token;
+
   if (!isLoggedIn) {
     if (isAuthPage || isEnrollPage) return NextResponse.next();
     const url = new URL("/login", nextUrl);
@@ -27,12 +33,12 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
 
-  if (path.startsWith("/admin") && req.auth?.user?.role !== "ADMIN") {
+  if (path.startsWith("/admin") && token?.role !== "ADMIN") {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)).*)"],
