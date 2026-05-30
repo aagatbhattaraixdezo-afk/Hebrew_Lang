@@ -11,14 +11,53 @@ generator, full PWA, and full i18n routing follow in subsequent build passes.
 - Auth.js v5 (Credentials provider) + JWT sessions + role-based middleware
 - Zod validation, bcryptjs hashes, framer-motion for feedback animations
 
-## Run
+## Run (local)
 ```bash
-cp .env.example .env             # or use the committed .env for local dev
+cp .env.example .env
 npm install
 npx prisma migrate dev --name init
 npx prisma db seed
 npm run dev
 ```
+
+## Deploy (Vercel + database)
+
+Demo logins need a **seeded** Postgres DB and **non-empty** Vercel env vars (`DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`).
+
+### Windows (path has spaces)
+
+Prisma’s VS Code / CLI shims break under `E:\Restaurant Projects\...`. Use the npm scripts (they call `node` directly):
+
+```powershell
+npm run db:generate
+npm run db:deploy
+npm run db:seed
+# or
+.\scripts\db-setup.ps1
+```
+
+### Vercel env (Production)
+
+| Variable | Example |
+|----------|---------|
+| `DATABASE_URL` | Postgres URI (Supabase pooler `:6543` or Prisma Postgres) |
+| `AUTH_SECRET` | `openssl rand -base64 32` |
+| `AUTH_URL` | `https://hebrew-lang.vercel.app` |
+
+Empty placeholders in the dashboard = login always fails. After setting values, redeploy.
+
+### One-time DB setup
+
+```bash
+npm run db:deploy
+npm run db:seed
+```
+
+With production secrets locally: `vercel env run -e production -- npm run db:deploy`
+
+### Supabase
+
+This app uses **Prisma + Auth.js**, not Supabase Auth. Link the project for CLI: `supabase link --project-ref <ref>`. Schema/data live in Postgres; ignore Supabase **Authentication → URL Configuration** for login.
 
 ## Demo accounts (password is `password123` for all)
 - **Admin** — admin@demo.test

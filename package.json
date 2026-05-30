@@ -7,14 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:migrate": "prisma migrate dev",
-    "db:reset": "prisma migrate reset --force",
-    "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "db:migrate": "node ./node_modules/prisma/build/index.js migrate dev",
+    "db:deploy": "node ./node_modules/prisma/build/index.js migrate deploy",
+    "db:reset": "node ./node_modules/prisma/build/index.js migrate reset --force",
+    "db:generate": "node ./node_modules/prisma/build/index.js generate",
+    "db:seed": "node ./node_modules/tsx/dist/cli.mjs prisma/seed.ts",
+    "db:setup": "npm run db:generate && npm run db:deploy && npm run db:seed",
+    "db:studio": "node ./node_modules/prisma/build/index.js studio",
+    "postinstall": "node ./node_modules/prisma/build/index.js generate"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "node ./node_modules/tsx/dist/cli.mjs prisma/seed.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",

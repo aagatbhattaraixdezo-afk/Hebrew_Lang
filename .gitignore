@@ -10,3 +10,10 @@ prisma/dev.db-journal
 .DS_Store
 .idea
 .vscode
+
+.vercel
+.env*.local
+.env.production.local
+
+supabase/.temp/
+.cursor/
