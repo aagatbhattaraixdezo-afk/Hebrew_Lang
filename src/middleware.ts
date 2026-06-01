@@ -1,9 +1,12 @@
-import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { auth } from "@/lib/auth.edge";
 
-export async function middleware(request: NextRequest) {
-  const { nextUrl } = request;
+type AuthUser = {
+  role?: "ADMIN" | "LEARNER";
+};
+
+export default auth((req) => {
+  const { nextUrl } = req;
   let path = nextUrl.pathname;
 
   if (path === "/homepage" || path === "/home") {
@@ -12,25 +15,13 @@ export async function middleware(request: NextRequest) {
 
   const isAuthPage = path === "/login";
   const isEnrollPage = path.startsWith("/enroll");
-  const isPublicAsset =
-    path.startsWith("/_next") ||
-    path.startsWith("/api/auth") ||
-    path.startsWith("/favicon") ||
-    path.startsWith("/manifest");
-
-  if (isPublicAsset) return NextResponse.next();
-
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-  });
-  const isLoggedIn = !!token;
+  const isLoggedIn = !!req.auth;
+  const role = (req.auth?.user as AuthUser | undefined)?.role;
 
   if (!isLoggedIn) {
     if (isAuthPage || isEnrollPage) return NextResponse.next();
     const url = new URL("/login", nextUrl);
-    const from =
-      path === "/homepage" || path === "/home" ? "/" : path;
+    const from = path === "/homepage" || path === "/home" ? "/" : path;
     if (from !== "/") url.searchParams.set("from", from);
     return NextResponse.redirect(url);
   }
@@ -39,12 +30,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
 
-  if (path.startsWith("/admin") && token?.role !== "ADMIN") {
+  if (path.startsWith("/admin") && role !== "ADMIN") {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)).*)"],

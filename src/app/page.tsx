@@ -12,7 +12,7 @@ import DashboardCoursesGrid from "./components/DashboardCoursesGrid";
 
 export default async function DashboardPage() {
   const session = await auth();
-  if (!session?.user) return null;
+  if (!session?.user) redirect("/login");
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },

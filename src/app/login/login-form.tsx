@@ -47,6 +47,8 @@ export function LoginForm({ fromPath }: { fromPath: string }) {
     const password = data.password;
 
     try {
+      const destination = safeRedirectPath(fromPath);
+
       const res = await signIn("credentials", {
         email,
         password,
@@ -65,9 +67,8 @@ export function LoginForm({ fromPath }: { fromPath: string }) {
       const roleLabel = match ? ` as ${match.label}` : '';
       toast.success(`Welcome back! Signing you in${roleLabel}`);
 
-      const destination = safeRedirectPath(fromPath);
-      // Full navigation so the session cookie is visible to middleware (router.push can race).
-      window.location.assign(destination);
+      // Hard navigation after cookie is set; middleware uses auth.edge (Auth.js v5 cookies).
+      window.location.href = destination;
       return;
     } catch (e) {
       setError('root', {
