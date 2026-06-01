@@ -1,5 +1,8 @@
 # Shalom — Hebrew for Nepali learners
 
+- **Live:** [hebrew-lang.vercel.app](https://hebrew-lang.vercel.app)
+- **Repo:** [github.com/aagatbhattaraixdezo-afk/Hebrew_Lang](https://github.com/aagatbhattaraixdezo-afk/Hebrew_Lang)
+
 Full-stack web app (Duolingo × Udemy style) that teaches Hebrew to Nepali learners.
 This is the vertical-slice scaffold — learner flow works end-to-end. Admin CRUD, the AI
 generator, full PWA, and full i18n routing follow in subsequent build passes.
