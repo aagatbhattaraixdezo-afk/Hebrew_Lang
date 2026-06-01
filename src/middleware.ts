@@ -4,7 +4,11 @@ import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
   const { nextUrl } = request;
-  const path = nextUrl.pathname;
+  let path = nextUrl.pathname;
+
+  if (path === "/homepage" || path === "/home") {
+    return NextResponse.redirect(new URL("/", nextUrl));
+  }
 
   const isAuthPage = path === "/login";
   const isEnrollPage = path.startsWith("/enroll");
@@ -25,7 +29,9 @@ export async function middleware(request: NextRequest) {
   if (!isLoggedIn) {
     if (isAuthPage || isEnrollPage) return NextResponse.next();
     const url = new URL("/login", nextUrl);
-    if (path !== "/") url.searchParams.set("from", path);
+    const from =
+      path === "/homepage" || path === "/home" ? "/" : path;
+    if (from !== "/") url.searchParams.set("from", from);
     return NextResponse.redirect(url);
   }
 

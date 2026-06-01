@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Eye, EyeOff, AlertCircle, Copy, Check, LogIn } from 'lucide-react';
 import AppLogo from '@/components/ui/AppLogo';
+import { safeRedirectPath } from '@/lib/safe-redirect';
 import { toast } from 'sonner';
 
 interface LoginFormData {
@@ -22,7 +22,6 @@ const demoAccounts = [
 ];
 
 export function LoginForm({ fromPath }: { fromPath: string }) {
-  const router = useRouter();
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -65,9 +64,11 @@ export function LoginForm({ fromPath }: { fromPath: string }) {
       const match = demoAccounts.find((a) => a.email === email);
       const roleLabel = match ? ` as ${match.label}` : '';
       toast.success(`Welcome back! Signing you in${roleLabel}`);
-      
-      router.push(fromPath || '/');
-      router.refresh();
+
+      const destination = safeRedirectPath(fromPath);
+      // Full navigation so the session cookie is visible to middleware (router.push can race).
+      window.location.assign(destination);
+      return;
     } catch (e) {
       setError('root', {
         message: 'Network error. Please try again.',
