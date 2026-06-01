@@ -13,6 +13,15 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
 
+  // Public static files must not require auth (manifest as HTML breaks PWA parse).
+  if (
+    path === "/manifest.webmanifest" ||
+    path === "/robots.txt" ||
+    path.endsWith(".webmanifest")
+  ) {
+    return NextResponse.next();
+  }
+
   const isAuthPage = path === "/login";
   const isEnrollPage = path.startsWith("/enroll");
   const isLoggedIn = !!req.auth;
@@ -40,6 +49,6 @@ export default auth((req) => {
 export const config = {
   // Do not run on /api/auth — otherwise sign-in cannot set the session cookie.
   matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)).*)",
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|manifest\\.webmanifest|robots\\.txt|.*\\.(?:png|jpg|jpeg|svg|webp|ico|webmanifest)).*)",
   ],
 };
